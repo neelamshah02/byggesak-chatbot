@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "byggesak": {
+      "command": "npx",
+      "args": ["ts-node", "--esm", "mcp-server/index.ts"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}
