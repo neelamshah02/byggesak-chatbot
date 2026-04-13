@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, MapPin, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { generateChatResponse } from "@/lib/chat-service";
 
 interface Message {
   id: string;
@@ -24,7 +25,7 @@ Jeg kan hjelpe deg med å forstå:
 - **Hva du kan bygge** uten å søke
 - **Søknadsprosessen** for byggeprosjekter
 
-**For å starte, skriv inn adressen din** (f.eks. "Løkkeveien 45, Stavanger"), så finner jeg informasjon om eiendommen din.`,
+**For å starte, skriv inn adressen din** (f.eks. "Steinstemveien 26, Sandnes" eller "Løkkeveien 10, Stavanger"), så finner jeg informasjon om eiendommen din.`,
       timestamp: new Date(),
     },
   ]);
@@ -57,29 +58,18 @@ Jeg kan hjelpe deg med å forstå:
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get response");
-      }
-
-      const data = await response.json();
+      // Use client-side chat service (works with static export / GitHub Pages)
+      const responseContent = await generateChatResponse(
+        [...messages, userMessage].map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      );
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.content,
+        content: responseContent,
         timestamp: new Date(),
       };
 
@@ -105,7 +95,7 @@ Jeg kan hjelpe deg med å forstå:
   };
 
   const examples = [
-    "Løkkeveien 45, Stavanger",
+    "Steinstemveien 26, Sandnes",
     "Hva kan jeg bygge uten å søke?",
     "Hvordan søker jeg om tilbygg?",
   ];

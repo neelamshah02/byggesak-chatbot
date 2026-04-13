@@ -1,15 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+/**
+ * Client-side chat service for GitHub Pages deployment
+ * This replaces the server-side API route
+ */
+
 import {
   searchAddress,
   formatPropertyInfo,
   looksLikeAddress,
-} from "@/lib/kartverket";
-import { findRelevantRegulations, formatRegulations } from "@/lib/regulations";
+} from "./kartverket";
+import { findRelevantRegulations, formatRegulations } from "./regulations";
 import {
   findAreaRegulations,
   formatAreaRegulations,
   getRegulationLookupLinks,
-} from "@/lib/area-regulations";
+} from "./area-regulations";
 
 interface Message {
   role: "user" | "assistant";
@@ -17,36 +21,39 @@ interface Message {
 }
 
 /**
- * Simple AI-like response generation
- * For production, replace with actual LLM integration (OpenAI, Anthropic, etc.)
+ * Process chat messages and generate response (client-side)
  */
-async function generateResponse(
+export async function generateChatResponse(
   messages: Message[],
-  context: {
-    addressInfo?: string;
-    areaInfo?: string;
-    lookupLinks?: string;
-    regulations?: string;
-  },
 ): Promise<string> {
   const lastMessage = messages[messages.length - 1].content;
 
-  // If we have address context, include it
-  if (context.addressInfo) {
-    let response = context.addressInfo + "\n\n";
+  // Check if the message looks like an address
+  if (looksLikeAddress(lastMessage)) {
+    try {
+      const addresses = await searchAddress(lastMessage);
 
-    // Add area-specific regulations if found
-    if (context.areaInfo) {
-      response += "---\n\n" + context.areaInfo + "\n\n";
-    }
+      if (addresses.length > 0) {
+        const address = addresses[0];
+        let response = formatPropertyInfo(address) + "\n\n";
 
-    // Add relevant general regulations based on the query
-    const regs = findRelevantRegulations(lastMessage);
-    if (regs.length > 0) {
-      response += "---\n\n**Generelle byggeregler som også gjelder:**\n\n";
-      response += formatRegulations(regs);
-    } else {
-      response += `
+        // Look up area-specific regulations
+        const areaReg = findAreaRegulations(address.adressetekst, {
+          lat: address.representasjonspunkt.lat,
+          lon: address.representasjonspunkt.lon,
+        });
+
+        if (areaReg) {
+          response += "---\n\n" + formatAreaRegulations(areaReg) + "\n\n";
+        }
+
+        // Add relevant general regulations
+        const regs = findRelevantRegulations(lastMessage);
+        if (regs.length > 0) {
+          response += "---\n\n**Generelle byggeregler som også gjelder:**\n\n";
+          response += formatRegulations(regs);
+        } else {
+          response += `
 **Hva vil du vite mer om?**
 - Hva du kan bygge uten å søke
 - Tilbygg og påbygg
@@ -54,15 +61,33 @@ async function generateResponse(
 - Terrasse og platting
 - Gjerde og levegg
 - Søknadsprosessen
-      `;
-    }
+          `;
+        }
 
-    // Add lookup links
-    if (context.lookupLinks) {
-      response += "\n\n---\n\n" + context.lookupLinks;
-    }
+        // Add lookup links
+        response +=
+          "\n\n---\n\n" +
+          getRegulationLookupLinks(
+            address.kommunenavn,
+            address.gardsnummer,
+            address.bruksnummer,
+          );
 
-    return response;
+        return response;
+      } else {
+        return `
+Jeg fant dessverre ingen adresse som matcher "${lastMessage}" i Stavanger eller Sandnes kommune.
+
+**Tips:**
+- Sjekk stavingen
+- Inkluder gate/vei-navn og husnummer
+- Prøv å legge til kommunenavn (f.eks. "Stavanger" eller "Sandnes")
+        `;
+      }
+    } catch (error) {
+      console.error("Address search error:", error);
+      return "Det oppstod en feil ved søk etter adressen. Vennligst prøv igjen.";
+    }
   }
 
   // Handle common questions without address
@@ -166,75 +191,4 @@ Jeg forstår at du lurer på noe om byggesaker. For å kunne hjelpe deg best mul
 
 Prøv for eksempel: *"Steinstemveien 26, Sandnes"* eller *"Hva kan jeg bygge uten å søke?"*
   `;
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const { messages } = await request.json();
-
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
-    }
-
-    const lastMessage = messages[messages.length - 1].content;
-    let context: {
-      addressInfo?: string;
-      areaInfo?: string;
-      lookupLinks?: string;
-      regulations?: string;
-    } = {};
-
-    // Check if the message looks like an address
-    if (looksLikeAddress(lastMessage)) {
-      try {
-        const addresses = await searchAddress(lastMessage);
-
-        if (addresses.length > 0) {
-          const address = addresses[0];
-          context.addressInfo = formatPropertyInfo(address);
-
-          // Look up area-specific regulations
-          const areaReg = findAreaRegulations(address.adressetekst, {
-            lat: address.representasjonspunkt.lat,
-            lon: address.representasjonspunkt.lon,
-          });
-
-          if (areaReg) {
-            context.areaInfo = formatAreaRegulations(areaReg);
-          }
-
-          // Add lookup links
-          context.lookupLinks = getRegulationLookupLinks(
-            address.kommunenavn,
-            address.gardsnummer,
-            address.bruksnummer,
-          );
-        } else {
-          context.addressInfo = `
-Jeg fant dessverre ingen adresse som matcher "${lastMessage}" i Stavanger eller Sandnes kommune.
-
-**Tips:**
-- Sjekk stavingen
-- Inkluder gate/vei-navn og husnummer
-- Prøv å legge til kommunenavn (f.eks. "Stavanger" eller "Sandnes")
-          `;
-        }
-      } catch (error) {
-        console.error("Address search error:", error);
-        context.addressInfo = `
-Det oppstod en feil ved søk etter adressen. Vennligst prøv igjen.
-        `;
-      }
-    }
-
-    const response = await generateResponse(messages, context);
-
-    return NextResponse.json({ content: response });
-  } catch (error) {
-    console.error("Chat API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
 }

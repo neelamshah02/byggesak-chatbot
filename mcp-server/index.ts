@@ -119,7 +119,7 @@ const tools: Tool[] = [
         query: {
           type: "string",
           description:
-            'Adressen å søke etter (f.eks. "Løkkeveien 45, Stavanger")',
+            'Adressen å søke etter (f.eks. "Steinstemveien 26, Sandnes")',
         },
       },
       required: ["query"],
