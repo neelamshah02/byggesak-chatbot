@@ -1,50 +1,117 @@
 # Byggesak Chatbot 🏠
 
-En chatbot for Stavanger og Sandnes kommune som hjelper deg med å forstå byggeforskrifter og krav for byggeprosjekter.
+A chatbot that helps residents of **Stavanger** and **Sandnes** (Norway) understand building regulations for their property. Type an address or a question — get plain-language answers with links to official sources.
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 ![MCP](https://img.shields.io/badge/MCP-1.0-green)
 
-## Funksjoner
+## What It Does
 
-- 🔍 **Adressesøk** - Søk opp eiendomsinformasjon via Kartverket
-- 📋 **Byggeregler** - Få oversikt over hva du kan bygge uten søknad
-- 💬 **Enkel forklaring** - Komplekse regler forklart på en forståelig måte
-- 🤖 **MCP Server** - Integrer med GitHub Copilot for AI-assistert hjelp
+- **Address lookup** — type your address, get property-specific regulations (gnr/bnr, area plan, BYA%, height limits)
+- **Conflict detection** — if your project conflicts with regulations, the bot flags it and shows what to apply for
+- **Application guides** — step-by-step checklists for dispensasjon (exemption), byggesøknad (permit), and nabovarsel (neighbour notification)
+- **General questions** — ask about rules for garages, extensions, fences, terraces without an address
+- **Direct links** — every response includes links to the relevant municipal portal and official forms
 
-## Kom i gang
+## Sample Questions
 
-### Installer avhengigheter
+**Address lookup:**
+```
+Steinstemveien 26, Sandnes
+```
+```
+Lagårdsveien 12, Stavanger
+```
+```
+Steinstemveien 26 Sandnes. Hva kan jeg bygge uten å søke?
+```
+
+**Conflict detection (triggers application guides):**
+```
+Jeg vil bygge garasje 2 meter fra nabogrensen
+```
+```
+Kan jeg bygge et 30m² tilbygg med soverom?
+```
+```
+Tomten er 400m², huset er 120m², vil bygge garasje på 50m²
+```
+```
+Jeg vil bygge hybel i kjelleren
+```
+
+**General building questions:**
+```
+Hva kan jeg bygge uten å søke?
+```
+```
+Regler for terrasse og platting
+```
+```
+Hva er BYA?
+```
+```
+Gjerde mot nabo — hva er reglene?
+```
+```
+Søknadsprosessen — hvordan søker jeg?
+```
+
+## How the Bot Responds
+
+| Input | Response |
+|---|---|
+| Address only | Property info + area plan + regulations for that property |
+| Address + question | Property info + relevant rules + conflict detection |
+| Size > 15m² or habitable room mentioned | Søknad + nabovarsel guide with checklist |
+| Setback < 4m or BYA exceeded | Dispensasjon guide with checklist |
+| General question | Relevant regulation category + portal links |
+| All responses | Footer with quick links to søknad/dispensasjon portals |
+
+## Getting Started
 
 ```bash
 npm install
-```
-
-### Start utviklingsserver
-
-```bash
 npm run dev
 ```
 
-Åpne [http://localhost:3000](http://localhost:3000) i nettleseren.
+Open [http://localhost:3000](http://localhost:3000).
 
-### (Valgfritt) Legg til AI-funksjonalitet
+### Optional: AI backend
 
-For mer avansert AI-assistanse, kopier `.env.local.example` til `.env.local` og legg til din API-nøkkel:
+Copy `.env.local.example` to `.env.local` and add an API key for LLM-powered responses:
 
 ```bash
 cp .env.local.example .env.local
-# Rediger .env.local og legg til ANTHROPIC_API_KEY eller OPENAI_API_KEY
+# Add ANTHROPIC_API_KEY or OPENAI_API_KEY
 ```
 
-## MCP Server for GitHub Copilot
+## Project Structure
 
-Prosjektet inkluderer en MCP (Model Context Protocol) server som lar deg bruke byggesak-verktøyene direkte i GitHub Copilot.
+```
+byggesak-chatbot/
+├── src/
+│   ├── app/
+│   │   ├── api/chat/route.ts       # Server-side chat endpoint
+│   │   └── page.tsx                # Main page
+│   ├── components/
+│   │   ├── Chat.tsx                # Chat UI
+│   │   └── Header.tsx              # Header
+│   └── lib/
+│       ├── kartverket.ts           # Kartverket address API + extraction
+│       ├── regulations.ts          # General building regulations (8 categories)
+│       ├── area-regulations.ts     # Area-specific rules (9 neighbourhoods)
+│       ├── application-guides.ts   # Dispensasjon/søknad/nabovarsel guides
+│       └── chat-service.ts         # Client-side orchestration
+├── mcp-server/
+│   └── index.ts                    # MCP server for GitHub Copilot
+└── package.json
+```
 
-### Konfigurer MCP Server
+## MCP Server (GitHub Copilot Integration)
 
-1. Legg til følgende i din VS Code settings eller `mcp.json`:
+Add to VS Code `mcp.json`:
 
 ```json
 {
@@ -58,87 +125,47 @@ Prosjektet inkluderer en MCP (Model Context Protocol) server som lar deg bruke b
 }
 ```
 
-2. Restart VS Code
+Available tools: `search_address`, `get_building_regulations`, `check_building_allowed`, `explain_regulation`
 
-3. I Copilot Chat, kan du nå bruke verktøyene:
-   - `search_address` - Søk etter adresser
-   - `get_building_regulations` - Hent byggeregler
-   - `check_building_allowed` - Sjekk om bygging er tillatt
-   - `explain_regulation` - Få forklaring på begreper
+## Coverage
 
-### Tilgjengelige MCP-verktøy
+**Municipalities:** Stavanger (1103), Sandnes (1108)
 
-| Verktøy                    | Beskrivelse                                      |
-| -------------------------- | ------------------------------------------------ |
-| `search_address`           | Søk etter adresse i Stavanger/Sandnes            |
-| `get_building_regulations` | Hent regler for garasje, tilbygg, terrasse, etc. |
-| `check_building_allowed`   | Sjekk om et byggeprosjekt kan gjøres uten søknad |
-| `explain_regulation`       | Forklar begreper som BYA, gesimshøyde, etc.      |
+**General regulation categories:** detached buildings ≤50m², extensions ≤15m², terrasse/platting, gjerde/levegg, BYA, byggegrense, høydebestemmelser, søknadsprosess
 
-## Prosjektstruktur
+**Neighbourhoods with area-specific rules:** Lura, Austrått, Ganddal, Sentrum (Sandnes) · Eiganes/Våland, Hundvåg, Storhaug, Madla (Stavanger)
 
-```
-byggesak-chatbot/
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   └── chat/
-│   │   │       └── route.ts      # Chat API endpoint
-│   │   ├── globals.css           # Global styles
-│   │   ├── layout.tsx            # App layout
-│   │   └── page.tsx              # Main page
-│   ├── components/
-│   │   ├── Chat.tsx              # Chat interface
-│   │   └── Header.tsx            # Header component
-│   └── lib/
-│       ├── kartverket.ts         # Address lookup
-│       └── regulations.ts         # Building regulations
-├── mcp-server/
-│   ├── index.ts                  # MCP server entry
-│   └── tsconfig.json             # MCP server config
-└── package.json
-```
+**Application guides:** dispensasjon, byggesøknad, nabovarsel — each with document checklist, portal links, processing times, tips
 
-## API-er som brukes
+## External APIs
 
-- **Kartverket Adresse-API**: [ws.geonorge.no/adresser/v1](https://ws.geonorge.no/adresser/v1/) - Gratis adressesøk
-- **Kommunens kartportal**: Reguleringsplaner og eiendomsinfo
+| Service | Purpose | Auth |
+|---|---|---|
+| [Kartverket Address API](https://ws.geonorge.no/adresser/v1/) | Property lookup | None |
+| [arealplaner.no](https://arealplaner.no) | Area plan details | None |
+| [Stavanger kommune](https://www.stavanger.kommune.no/byggesak/) | Municipal portal | None |
+| [Sandnes kommune](https://www.sandnes.kommune.no/tjenester/byggesak/) | Municipal portal | None |
+| [DiBK](https://dibk.no) | Blankett 5154 (nabovarsel) | None |
 
-## Byggeregler som dekkes
-
-- Frittliggende bygg inntil 50 m² (garasje, bod, uthus)
-- Tilbygg inntil 15 m²
-- Terrasse og platting
-- Gjerde og levegg
-- Utnyttelsesgrad (BYA)
-- Byggegrense og høydebestemmelser
-
-## Utvikling
-
-### Kjør MCP server lokalt
+## Build
 
 ```bash
-npm run mcp:dev
+npm run build   # static export to /out
+npm run mcp:dev # start MCP server
 ```
 
-### Bygg prosjektet
+Deployed to GitHub Pages via GitHub Actions on push to `main`.
 
-```bash
-npm run build
-```
-
-## Kilder og referanser
+## Sources
 
 - [Plan- og bygningsloven](https://lovdata.no/dokument/NL/lov/2008-06-27-71)
-- [TEK17 - Byggteknisk forskrift](https://lovdata.no/dokument/SF/forskrift/2017-06-19-840)
-- [Stavanger kommune - Byggesak](https://www.stavanger.kommune.no/byggesak)
-- [Sandnes kommune - Byggesak](https://www.sandnes.kommune.no/byggesak)
+- [TEK17 — Byggteknisk forskrift](https://lovdata.no/dokument/SF/forskrift/2017-06-19-840)
 - [Direktoratet for byggkvalitet](https://dibk.no/)
 
-## Ansvarsfraskrivelse
+## Disclaimer
 
-⚠️ Denne chatboten gir generell veiledning basert på gjeldende lover og forskrifter. For bindende avklaringer, kontakt alltid kommunen direkte. Reguleringsplaner og lokale bestemmelser kan variere, så sjekk alltid disse for din spesifikke eiendom.
+⚠️ This chatbot provides general guidance based on current laws and regulations. For binding clarification, always contact the municipality directly. Zoning plans and local rules vary — always verify for your specific property.
 
-## Lisens
+## License
 
 MIT
