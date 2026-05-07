@@ -1,3 +1,7 @@
+/**
+ * Application guide data for dispensasjon, søknad, and nabovarsel.
+ * Used by findApplicableGuides() to surface relevant guides in chat responses.
+ */
 import type { AreaRegulation } from "./area-regulations";
 
 export interface ApplicationGuide {
@@ -89,7 +93,7 @@ export const applicationGuides: ApplicationGuide[] = [
   {
     id: "nabovarsel",
     title: "Send nabovarsel først",
-    triggerKeywords: [],
+    triggerKeywords: [], // always co-triggered with soknad — never matched by keyword
     whenNeeded:
       "Nabovarsel må sendes til alle naboer og gjenboere før du sender byggesøknad. Naboene har 14 dagers frist til å komme med merknader.",
     documentChecklist: [
