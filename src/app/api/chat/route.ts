@@ -10,6 +10,11 @@ import {
   formatAreaRegulations,
   getRegulationLookupLinks,
 } from "@/lib/area-regulations";
+import {
+  findApplicableGuides,
+  formatGuides,
+  formatFooterCTA,
+} from "@/lib/application-guides";
 
 interface Message {
   role: "user" | "assistant";
@@ -27,6 +32,8 @@ async function generateResponse(
     areaInfo?: string;
     lookupLinks?: string;
     regulations?: string;
+    guides?: string;
+    footerCTA?: string;
   },
 ): Promise<string> {
   const lastMessage = messages[messages.length - 1].content;
@@ -57,9 +64,19 @@ async function generateResponse(
       `;
     }
 
+    // Inject application guides if any
+    if (context.guides) {
+      response += context.guides;
+    }
+
     // Add lookup links
     if (context.lookupLinks) {
       response += "\n\n---\n\n" + context.lookupLinks;
+    }
+
+    // Add footer CTA
+    if (context.footerCTA) {
+      response += context.footerCTA;
     }
 
     return response;
@@ -182,6 +199,8 @@ export async function POST(request: NextRequest) {
       areaInfo?: string;
       lookupLinks?: string;
       regulations?: string;
+      guides?: string;
+      footerCTA?: string;
     } = {};
 
     // Check if the message looks like an address
@@ -209,6 +228,13 @@ export async function POST(request: NextRequest) {
             address.gardsnummer,
             address.bruksnummer,
           );
+
+          // Detect conflicts and build guides
+          const guides = findApplicableGuides(lastMessage, areaReg ?? undefined);
+          if (guides.length > 0) {
+            context.guides = formatGuides(guides, address.kommunenavn);
+          }
+          context.footerCTA = formatFooterCTA().trimStart().replace(/^---\n/, "");
         } else {
           context.addressInfo = `
 Jeg fant dessverre ingen adresse som matcher "${lastMessage}" i Stavanger eller Sandnes kommune.
