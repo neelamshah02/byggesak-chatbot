@@ -14,6 +14,11 @@ import {
   formatAreaRegulations,
   getRegulationLookupLinks,
 } from "./area-regulations";
+import {
+  findApplicableGuides,
+  formatGuides,
+  formatFooterCTA,
+} from "./application-guides";
 
 interface Message {
   role: "user" | "assistant";
@@ -64,7 +69,13 @@ export async function generateChatResponse(
           `;
         }
 
-        // Add lookup links
+        // Detect conflicts and inject application guides
+        const guides = findApplicableGuides(lastMessage, areaReg ?? undefined);
+        if (guides.length > 0) {
+          response += formatGuides(guides, address.kommunenavn);
+        }
+
+        // Add lookup links and footer CTA
         response +=
           "\n\n---\n\n" +
           getRegulationLookupLinks(
@@ -72,6 +83,7 @@ export async function generateChatResponse(
             address.gardsnummer,
             address.bruksnummer,
           );
+        response += formatFooterCTA();
 
         return response;
       } else {
@@ -165,14 +177,15 @@ Du trenger vanligvis:
 - Eventuell dispensasjonssøknad
 
 **4. Send inn søknad**
-- Stavanger: [Søk digitalt via eByggesøk](https://www.stavanger.kommune.no/byggesok)
-- Sandnes: [Søk digitalt via eByggesøk](https://www.sandnes.kommune.no/byggesak)
+- Stavanger: [Søk digitalt via eByggesøk](https://www.stavanger.kommune.no/byggesak/soknad/)
+- Sandnes: [Søk digitalt via eByggesøk](https://www.sandnes.kommune.no/tjenester/byggesak/soknad/)
 
 **Behandlingstid:**
 - 3 uker for enkle tiltak
 - 12 uker for mer komplekse saker
 
 **Skriv inn adressen din for å få mer spesifikk informasjon om hva som gjelder for din eiendom.**
+${formatFooterCTA()}
     `;
   }
 
