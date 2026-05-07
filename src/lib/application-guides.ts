@@ -113,3 +113,136 @@ export const applicationGuides: ApplicationGuide[] = [
     ],
   },
 ];
+
+export function findApplicableGuides(
+  query: string,
+  areaReg?: AreaRegulation,
+): ApplicationGuide[] {
+  const lower = query.toLowerCase();
+  const triggered = new Set<ApplicationGuide["id"]>();
+
+  // Dispensasjon: explicit conflict keywords
+  const dispensasjonKeywords = [
+    "nærmere enn",
+    "for nær",
+    "for nærme",
+    "overstiger",
+    "overskrider",
+    "dispensasjon",
+    "dispensere",
+  ];
+  if (dispensasjonKeywords.some((kw) => lower.includes(kw))) {
+    triggered.add("dispensasjon");
+  }
+
+  // Dispensasjon: numeric setback conflict (e.g. "2 meter fra nabo")
+  const setbackMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*m(?:eter)?\s+fra\s+nabo/);
+  if (setbackMatch) {
+    const distance = parseFloat(setbackMatch[1].replace(",", "."));
+    if (distance < 4) triggered.add("dispensasjon");
+  }
+
+  // Dispensasjon: BYA conflict — user provides plot + building sizes
+  if (areaReg?.regulations.maxBYA) {
+    const maxBYA = parseFloat(areaReg.regulations.maxBYA) / 100;
+    const plotMatch = lower.match(/tomt(?:en)?\s+(?:er|på)\s+(\d+)\s*m/);
+    const newMatch = lower.match(/(?:bygge|tilbygg|garasje)\s+(?:på\s+)?(\d+)\s*m/);
+    const existingMatch = lower.match(/(?:huset|boligen|eksisterende)\s+(?:er|på)\s+(\d+)\s*m/);
+    if (plotMatch && newMatch && existingMatch) {
+      const plotSize = parseInt(plotMatch[1]);
+      const newSize = parseInt(newMatch[1]);
+      const existingSize = parseInt(existingMatch[1]);
+      if ((newSize + existingSize) / plotSize > maxBYA) {
+        triggered.add("dispensasjon");
+      }
+    }
+  }
+
+  // Søknad: size > 15m²
+  const sizeMatch = lower.match(/(\d+)\s*m(?:²|2|\s*kvm)/);
+  if (sizeMatch && parseInt(sizeMatch[1]) > 15) {
+    triggered.add("soknad");
+  }
+
+  // Søknad: habitable room or dwelling keywords
+  const soknadKeywords = [
+    "rom for varig opphold",
+    "soverom",
+    "stue",
+    "kjøkken",
+    "boenhet",
+    "hybel",
+    "leilighet",
+  ];
+  if (soknadKeywords.some((kw) => lower.includes(kw))) {
+    triggered.add("soknad");
+  }
+
+  // Nabovarsel always co-triggers with søknad
+  if (triggered.has("soknad")) {
+    triggered.add("nabovarsel");
+  }
+
+  return applicationGuides.filter((g) => triggered.has(g.id));
+}
+
+export function formatGuides(
+  guides: ApplicationGuide[],
+  kommune?: string,
+): string {
+  if (guides.length === 0) return "";
+
+  const konfliktGuide = guides.find((g) => g.id === "dispensasjon");
+  let output = "";
+
+  if (konfliktGuide) {
+    output += `\n\n> ⚠️ **Dispensasjon kan være nødvendig**\n> Tiltaket ditt ser ut til å være i konflikt med gjeldende regler. Du kan søke om dispensasjon — se veiledning nedenfor.\n`;
+  }
+
+  for (const guide of guides) {
+    const link =
+      kommune?.toLowerCase() === "sandnes"
+        ? guide.portalLinks.sandnes
+        : guide.portalLinks.stavanger;
+
+    const icon =
+      guide.id === "dispensasjon"
+        ? "⚖️"
+        : guide.id === "nabovarsel"
+          ? "📬"
+          : "📋";
+
+    output += `\n\n<details>\n<summary>${icon} ${guide.title}</summary>\n\n`;
+    output += `**Når trengs dette?**\n${guide.whenNeeded}\n\n`;
+    output += `**Dokumenter du trenger:**\n`;
+    for (const item of guide.documentChecklist) {
+      output += `- ${item}\n`;
+    }
+    output += `\n**Søk/last ned:**\n- [Gå til skjema / portal](${link})\n\n`;
+    output += `**Behandlingstid:** ${guide.processingTime}\n\n`;
+    if (guide.tips.length > 0) {
+      output += `**Tips:**\n`;
+      for (const tip of guide.tips) {
+        output += `- ${tip}\n`;
+      }
+    }
+    output += `\n</details>`;
+  }
+
+  return output;
+}
+
+export function formatFooterCTA(kommune?: string): string {
+  const stavSoknad = "https://www.stavanger.kommune.no/byggesak/soknad/";
+  const sandSoknad = "https://www.sandnes.kommune.no/tjenester/byggesak/soknad/";
+  const stavDisp = "https://www.stavanger.kommune.no/byggesak/dispensasjon/";
+  const sandDisp = "https://www.sandnes.kommune.no/tjenester/byggesak/dispensasjon/";
+  const nabovarsel = "https://dibk.no/globalassets/skjema/5154.pdf";
+
+  return (
+    `\n\n---\n` +
+    `**Må du søke?** → [Stavanger](${stavSoknad}) · [Sandnes](${sandSoknad})\n` +
+    `**Trenger dispensasjon?** → [Stavanger](${stavDisp}) · [Sandnes](${sandDisp})\n` +
+    `**Nabovarsel først?** → [Last ned blankett 5154](${nabovarsel})`
+  );
+}
