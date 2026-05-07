@@ -83,7 +83,7 @@ export async function generateChatResponse(
             address.gardsnummer,
             address.bruksnummer,
           );
-        response += formatFooterCTA();
+        response += formatFooterCTA().trimStart().replace(/^---\n/, "");
 
         return response;
       } else {
@@ -119,6 +119,8 @@ ${formatRegulations(regs)}
 
 **Viktig:**
 For å gi deg nøyaktig informasjon om hva du kan bygge, trenger jeg adressen til eiendommen din. Skriv inn adressen (f.eks. "Steinstemveien 26, Sandnes").
+
+${formatFooterCTA()}
     `;
   }
 
@@ -127,7 +129,7 @@ For å gi deg nøyaktig informasjon om hva du kan bygge, trenger jeg adressen ti
     lowercaseMessage.includes("påbygg")
   ) {
     const regs = findRelevantRegulations("tilbygg søknad");
-    return formatRegulations(regs);
+    return formatRegulations(regs) + `\n\n${formatFooterCTA()}`;
   }
 
   if (
@@ -136,7 +138,7 @@ For å gi deg nøyaktig informasjon om hva du kan bygge, trenger jeg adressen ti
     lowercaseMessage.includes("uthus")
   ) {
     const regs = findRelevantRegulations("garasje frittliggende");
-    return formatRegulations(regs);
+    return formatRegulations(regs) + `\n\n${formatFooterCTA()}`;
   }
 
   if (
@@ -144,7 +146,7 @@ For å gi deg nøyaktig informasjon om hva du kan bygge, trenger jeg adressen ti
     lowercaseMessage.includes("platting")
   ) {
     const regs = findRelevantRegulations("terrasse");
-    return formatRegulations(regs);
+    return formatRegulations(regs) + `\n\n${formatFooterCTA()}`;
   }
 
   if (
@@ -152,7 +154,7 @@ For å gi deg nøyaktig informasjon om hva du kan bygge, trenger jeg adressen ti
     lowercaseMessage.includes("levegg")
   ) {
     const regs = findRelevantRegulations("gjerde");
-    return formatRegulations(regs);
+    return formatRegulations(regs) + `\n\n${formatFooterCTA()}`;
   }
 
   if (
