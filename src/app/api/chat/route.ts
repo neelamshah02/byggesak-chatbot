@@ -99,6 +99,8 @@ ${formatRegulations(regs)}
 
 **Viktig:**
 For å gi deg nøyaktig informasjon om hva du kan bygge, trenger jeg adressen til eiendommen din. Skriv inn adressen (f.eks. "Steinstemveien 26, Sandnes").
+
+${formatFooterCTA()}
     `;
   }
 
@@ -107,7 +109,7 @@ For å gi deg nøyaktig informasjon om hva du kan bygge, trenger jeg adressen ti
     lowercaseMessage.includes("påbygg")
   ) {
     const regs = findRelevantRegulations("tilbygg søknad");
-    return formatRegulations(regs);
+    return formatRegulations(regs) + `\n\n${formatFooterCTA()}`;
   }
 
   if (
@@ -116,7 +118,7 @@ For å gi deg nøyaktig informasjon om hva du kan bygge, trenger jeg adressen ti
     lowercaseMessage.includes("uthus")
   ) {
     const regs = findRelevantRegulations("garasje frittliggende");
-    return formatRegulations(regs);
+    return formatRegulations(regs) + `\n\n${formatFooterCTA()}`;
   }
 
   if (
@@ -124,7 +126,7 @@ For å gi deg nøyaktig informasjon om hva du kan bygge, trenger jeg adressen ti
     lowercaseMessage.includes("platting")
   ) {
     const regs = findRelevantRegulations("terrasse");
-    return formatRegulations(regs);
+    return formatRegulations(regs) + `\n\n${formatFooterCTA()}`;
   }
 
   if (
@@ -132,7 +134,7 @@ For å gi deg nøyaktig informasjon om hva du kan bygge, trenger jeg adressen ti
     lowercaseMessage.includes("levegg")
   ) {
     const regs = findRelevantRegulations("gjerde");
-    return formatRegulations(regs);
+    return formatRegulations(regs) + `\n\n${formatFooterCTA()}`;
   }
 
   if (
@@ -157,14 +159,16 @@ Du trenger vanligvis:
 - Eventuell dispensasjonssøknad
 
 **4. Send inn søknad**
-- Stavanger: [Søk digitalt via eByggesøk](https://www.stavanger.kommune.no/byggesok)
-- Sandnes: [Søk digitalt via eByggesøk](https://www.sandnes.kommune.no/byggesak)
+- Stavanger: [Søk digitalt via eByggesøk](https://www.stavanger.kommune.no/byggesak/soknad/)
+- Sandnes: [Søk digitalt via eByggesøk](https://www.sandnes.kommune.no/tjenester/byggesak/soknad/)
 
 **Behandlingstid:**
 - 3 uker for enkle tiltak
 - 12 uker for mer komplekse saker
 
 **Skriv inn adressen din for å få mer spesifikk informasjon om hva som gjelder for din eiendom.**
+
+${formatFooterCTA()}
     `;
   }
 

@@ -190,13 +190,13 @@ export function formatGuides(
           ? "📬"
           : "📋";
 
-    output += `\n\n<details>\n<summary>${icon} ${guide.title}</summary>\n\n`;
+    output += `\n\n---\n\n### ${icon} ${guide.title}\n\n`;
     output += `**Når trengs dette?**\n${guide.whenNeeded}\n\n`;
     output += `**Dokumenter du trenger:**\n`;
     for (const item of guide.documentChecklist) {
       output += `- ${item}\n`;
     }
-    output += `\n**Søk/last ned:**\n- [Gå til skjema / portal](${link})\n\n`;
+    output += `\n**Søk/last ned:** [Gå til skjema / portal](${link})\n\n`;
     output += `**Behandlingstid:** ${guide.processingTime}\n\n`;
     if (guide.tips.length > 0) {
       output += `**Tips:**\n`;
@@ -204,7 +204,6 @@ export function formatGuides(
         output += `- ${tip}\n`;
       }
     }
-    output += `\n</details>`;
   }
 
   return output;
