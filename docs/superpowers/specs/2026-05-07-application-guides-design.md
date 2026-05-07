@@ -165,6 +165,135 @@ No component changes. All content rendered as markdown via existing `react-markd
 
 ---
 
+## Demo Examples
+
+### A) Conflict detection — input → guides triggered
+
+**Example 1: Setback conflict**
+```
+User: "Jeg vil bygge garasje 2 meter fra nabogrensen på Steinstemveien 26, Sandnes"
+
+detectConflicts() sees:
+  - "2 meter fra nabogrensen" → setback < 4m required
+  - area reg: sandnes-lura active
+
+Guides triggered: [dispensasjon]
+Conflict callout: "⚠️ Dispensasjon kan være nødvendig — avstand til nabogrense er 2m, kravet er 4m"
+```
+
+**Example 2: Large extension with habitable room**
+```
+User: "Kan jeg bygge et 30m² tilbygg med soverom?"
+
+detectConflicts() sees:
+  - "30m²" → > 15m² threshold
+  - "soverom" → rom for varig opphold
+
+Guides triggered: [soknad, nabovarsel]
+No conflict callout (no regulation breach, just application required)
+```
+
+**Example 3: BYA conflict**
+```
+User: "Tomten er 400m², jeg vil bygge garasje på 50m² men huset er allerede 120m²"
+
+detectConflicts() sees:
+  - area reg maxBYA: 30% → max 120m²
+  - existing 120m² + new 50m² = 170m² → exceeds limit
+
+Guides triggered: [dispensasjon]
+Conflict callout: "⚠️ Dispensasjon kan være nødvendig — BYA vil bli 42.5%, maks tillatt er 30%"
+```
+
+**Example 4: No conflict, just a question**
+```
+User: "Hva er reglene for gjerde mot nabo?"
+
+detectConflicts() sees: no conflict signals
+
+Guides triggered: []
+Footer CTA only — no inline callout, no guide blocks
+```
+
+---
+
+### B) Full response output — end-to-end example
+
+**User input:** `"Steinstemveien 26, Sandnes — vil bygge 25m² tilbygg med stue"`
+
+**Full bot response:**
+
+```
+📍 **Steinstemveien 26, 4313 Sandnes**
+Gnr/Bnr: 62/445 · Sandnes kommune
+
+---
+
+**Gjeldende reguleringsplan: Lura (Kommuneplanens arealdel)**
+- Maks BYA: 30%
+- Maks gesimshøyde: 8 meter
+- Maks etasjer: 2
+
+---
+
+**Generelle byggeregler som gjelder:**
+
+## Større tilbygg (over 15 m²)
+Du må søke for tilbygg hvis tilbygget er over 15m² eller inneholder rom for varig opphold...
+
+---
+
+> ⚠️ **Søknad er påkrevd**
+> Tilbygg på 25m² med stue (rom for varig opphold) krever byggesøknad og nabovarsel.
+
+---
+
+<details>
+<summary>📋 Slik sender du byggesøknad</summary>
+
+**Når trengs søknad?**
+Tilbygg over 15m² eller med rom for varig opphold (stue, soverom, kjøkken).
+
+**Dokumenter du trenger:**
+- Situasjonskart (last ned fra kommunens kartportal)
+- Tegninger — plan, snitt og fasader
+- Nabovarsel med kvittering
+- Ansvarsrett (hvis ikke selvbygger)
+
+**Søk digitalt:**
+- [Stavanger: eByggesøk](https://www.stavanger.kommune.no/byggesak/soknad)
+- [Sandnes: eByggesøk](https://www.sandnes.kommune.no/byggesak/soknad)
+
+**Behandlingstid:** 3–12 uker
+
+</details>
+
+<details>
+<summary>📬 Nabovarsel — send dette først</summary>
+
+**Nabovarsel må sendes før søknaden.**
+Naboene har 14 dagers frist til å protestere.
+
+**Dokumenter som vedlegges nabovarselet:**
+- Nabovarselskjema (blankett 5154)
+- Situasjonskart
+- Tegninger av tiltaket
+
+**Last ned skjema:**
+- [Blankett 5154 — Nabovarsel](https://www.dibk.no/globalassets/skjema/5154.pdf)
+
+**Varslingsfrist:** 14 dager
+
+</details>
+
+---
+**Må du søke?** → [Stavanger](https://www.stavanger.kommune.no/byggesak/soknad) · [Sandnes](https://www.sandnes.kommune.no/byggesak/soknad)
+**Trenger dispensasjon?** → [Stavanger](https://www.stavanger.kommune.no/byggesak/dispensasjon) · [Sandnes](https://www.sandnes.kommune.no/byggesak/dispensasjon)
+**Nabovarsel først?** → [Last ned blankett 5154](https://www.dibk.no/globalassets/skjema/5154.pdf)
+```
+
+---
+
 ## Out of Scope
 
 - Multi-turn wizard / conversational state
