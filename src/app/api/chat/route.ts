@@ -3,6 +3,7 @@ import {
   searchAddress,
   formatPropertyInfo,
   looksLikeAddress,
+  extractAddressPart,
 } from "@/lib/kartverket";
 import { findRelevantRegulations, formatRegulations } from "@/lib/regulations";
 import {
@@ -210,7 +211,8 @@ export async function POST(request: NextRequest) {
     // Check if the message looks like an address
     if (looksLikeAddress(lastMessage)) {
       try {
-        const addresses = await searchAddress(lastMessage);
+        const addressQuery = extractAddressPart(lastMessage);
+        const addresses = await searchAddress(addressQuery);
 
         if (addresses.length > 0) {
           const address = addresses[0];

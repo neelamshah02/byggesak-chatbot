@@ -81,3 +81,18 @@ export function looksLikeAddress(input: string): boolean {
 
   return addressPatterns.some((pattern) => pattern.test(input));
 }
+
+/**
+ * Extract just the address portion from a mixed message.
+ * e.g. "Steinstemveien 26 Sandnes. What can I build?" -> "Steinstemveien 26 Sandnes"
+ * Returns the original string if no address boundary is found.
+ */
+export function extractAddressPart(input: string): string {
+  // Split at sentence-ending punctuation followed by a question/statement
+  const boundary = /[.?!]\s+/;
+  const match = boundary.exec(input);
+  if (match) {
+    return input.slice(0, match.index).trim();
+  }
+  return input.trim();
+}
