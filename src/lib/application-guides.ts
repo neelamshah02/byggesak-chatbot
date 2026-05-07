@@ -137,7 +137,7 @@ export function findApplicableGuides(
 
   // Søknad: size > 15m²
   const sizeMatch = lower.match(/(\d+)\s*(?:m(?:²|2)|kvm)/);
-  if (sizeMatch && parseInt(sizeMatch[1]) > 15) {
+  if (sizeMatch && parseInt(sizeMatch[1], 10) > 15) {
     triggered.add("soknad");
   }
 
