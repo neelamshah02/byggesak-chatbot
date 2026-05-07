@@ -7,7 +7,6 @@ import type { AreaRegulation } from "./area-regulations";
 export interface ApplicationGuide {
   id: "dispensasjon" | "soknad" | "nabovarsel";
   title: string;
-  triggerKeywords: string[];
   whenNeeded: string;
   documentChecklist: string[];
   portalLinks: {
@@ -22,15 +21,6 @@ export const applicationGuides: ApplicationGuide[] = [
   {
     id: "dispensasjon",
     title: "Søk om dispensasjon",
-    triggerKeywords: [
-      "nærmere enn",
-      "for nær",
-      "for nærme",
-      "overstiger",
-      "overskrider",
-      "dispensasjon",
-      "dispensere",
-    ],
     whenNeeded:
       "Dispensasjon trengs når tiltaket ditt er i konflikt med gjeldende reguleringsplan eller byggeregler — for eksempel for nær nabogrense, for høyt, eller BYA-grensen er overskredet.",
     documentChecklist: [
@@ -56,20 +46,6 @@ export const applicationGuides: ApplicationGuide[] = [
   {
     id: "soknad",
     title: "Send byggesøknad",
-    triggerKeywords: [
-      "søke",
-      "søknad",
-      "tilbygg",
-      "påbygg",
-      "rom for varig opphold",
-      "soverom",
-      "stue",
-      "kjøkken",
-      "boenhet",
-      "hybel",
-      "leilighet",
-      "garasje",
-    ],
     whenNeeded:
       "Byggesøknad trengs for tilbygg over 15 m², prosjekter som inneholder rom for varig opphold (stue, soverom, kjøkken), nye boenheter, eller andre større tiltak.",
     documentChecklist: [
@@ -93,7 +69,6 @@ export const applicationGuides: ApplicationGuide[] = [
   {
     id: "nabovarsel",
     title: "Send nabovarsel først",
-    triggerKeywords: [], // always co-triggered with soknad — never matched by keyword
     whenNeeded:
       "Nabovarsel må sendes til alle naboer og gjenboere før du sender byggesøknad. Naboene har 14 dagers frist til å komme med merknader.",
     documentChecklist: [
@@ -144,14 +119,16 @@ export function findApplicableGuides(
 
   // Dispensasjon: BYA conflict — user provides plot + building sizes
   if (areaReg?.regulations.maxBYA) {
-    const maxBYA = parseFloat(areaReg.regulations.maxBYA) / 100;
+    const bya = areaReg.regulations.maxBYA;
+    const byaUpper = /(\d+)%\s*$/.exec(bya);
+    const maxBYA = byaUpper ? parseFloat(byaUpper[1]) / 100 : parseFloat(bya) / 100;
     const plotMatch = lower.match(/tomt(?:en)?\s+(?:er|på)\s+(\d+)\s*m/);
     const newMatch = lower.match(/(?:bygge|tilbygg|garasje)\s+(?:på\s+)?(\d+)\s*m/);
     const existingMatch = lower.match(/(?:huset|boligen|eksisterende)\s+(?:er|på)\s+(\d+)\s*m/);
     if (plotMatch && newMatch && existingMatch) {
-      const plotSize = parseInt(plotMatch[1]);
-      const newSize = parseInt(newMatch[1]);
-      const existingSize = parseInt(existingMatch[1]);
+      const plotSize = parseInt(plotMatch[1], 10);
+      const newSize = parseInt(newMatch[1], 10);
+      const existingSize = parseInt(existingMatch[1], 10);
       if ((newSize + existingSize) / plotSize > maxBYA) {
         triggered.add("dispensasjon");
       }
@@ -159,7 +136,7 @@ export function findApplicableGuides(
   }
 
   // Søknad: size > 15m²
-  const sizeMatch = lower.match(/(\d+)\s*m(?:²|2|\s*kvm)/);
+  const sizeMatch = lower.match(/(\d+)\s*(?:m(?:²|2)|kvm)/);
   if (sizeMatch && parseInt(sizeMatch[1]) > 15) {
     triggered.add("soknad");
   }
@@ -173,6 +150,7 @@ export function findApplicableGuides(
     "boenhet",
     "hybel",
     "leilighet",
+    "garasje",
   ];
   if (soknadKeywords.some((kw) => lower.includes(kw))) {
     triggered.add("soknad");
@@ -192,10 +170,10 @@ export function formatGuides(
 ): string {
   if (guides.length === 0) return "";
 
-  const konfliktGuide = guides.find((g) => g.id === "dispensasjon");
+  const hasDispensasjon = guides.some((g) => g.id === "dispensasjon");
   let output = "";
 
-  if (konfliktGuide) {
+  if (hasDispensasjon) {
     output += `\n\n> ⚠️ **Dispensasjon kan være nødvendig**\n> Tiltaket ditt ser ut til å være i konflikt med gjeldende regler. Du kan søke om dispensasjon — se veiledning nedenfor.\n`;
   }
 
@@ -232,7 +210,7 @@ export function formatGuides(
   return output;
 }
 
-export function formatFooterCTA(kommune?: string): string {
+export function formatFooterCTA(): string {
   const stavSoknad = "https://www.stavanger.kommune.no/byggesak/soknad/";
   const sandSoknad = "https://www.sandnes.kommune.no/tjenester/byggesak/soknad/";
   const stavDisp = "https://www.stavanger.kommune.no/byggesak/dispensasjon/";
